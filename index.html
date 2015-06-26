@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Safari Audio Quirks</title>
+	<style>
+    #left
+    {
+      width: 200px;
+      float: left;
+    }
+
+    #right
+    {
+      margin-left: 200px; /* Change this to whatever the width of your left column is*/
+    }
+
+    .clear
+    {
+      clear: both;
+    }
+  </style>
+</head>
+<script type="text/javascript">
+	window.addEventListener('load', function(){
+		var audioButton = document.querySelector('#audioPlay');
+		var webAudioButton = document.querySelector('#webAudioPlay');
+
+		var audioTag = new Audio('loop.wav');
+		audioTag.loop = true;
+
+		audioButton.addEventListener('click', function(){
+			if (audioButton.innerHTML === "Play"){
+				audioButton.innerHTML = "Pause";
+				audioTag.play();
+			}else{
+				audioButton.innerHTML = "Play";
+				audioTag.pause();
+			}
+		});
+
+		window.AudioContext = window.AudioContext || window.webkitAudioContext;
+		var bufferSourceNode;
+		var audioContext = new AudioContext();
+		var audiobuffer;
+		bufferSourceNode = audioContext.createBufferSource();
+
+		GetAudioFromURL("loop.wav", function(err, buffer){
+			audiobuffer = buffer;
+			bufferSourceNode.buffer = audiobuffer;
+			bufferSourceNode.connect(audioContext.destination);
+			webAudioButton.disabled = false;
+		});
+
+		webAudioButton.addEventListener('click', function(){
+			if (webAudioButton.innerHTML === "Play"){
+				webAudioButton.innerHTML = "Pause";
+				bufferSourceNode.start(0);
+			}else{
+				webAudioButton.innerHTML = "Play";
+				bufferSourceNode.stop(0);
+				bufferSourceNode = audioContext.createBufferSource();
+				bufferSourceNode.buffer = audiobuffer;
+				bufferSourceNode.connect(audioContext.destination);
+			}
+		});
+
+		function GetAudioFromURL(URL, onLoadCallback, audioContext){
+		    if (!audioContext){
+		        window.AudioContext = window.AudioContext || window.webkitAudioContext
+		        audioContext = new AudioContext();
+		    }
+		    var request = new XMLHttpRequest();
+		    request.open('GET', URL, true);
+		    request.responseType = 'arraybuffer';
+		    request.onload = function () {
+		        audioContext.decodeAudioData(request.response, function(buffer){
+		            if (typeof onLoadCallback === 'function')
+		                onLoadCallback(null, buffer);
+		        },function (){
+		        	console.error("Decoding Error");
+		        });
+		    };
+		    request.send();
+		}
+	});
+</script>
+<body>
+ <div id="container">
+    <div id="left">
+      <h2>Audio</h2>
+      <button id="audioPlay">Play</button>
+    </div>
+    <div id="right">
+      <h2>WebAudio</h2>
+      <button id="webAudioPlay" disabled>Play</button>
+    </div>
+  </div>
+</body>
+</html>
